@@ -13,11 +13,12 @@ import {
   ModalOverlay, Select
 } from "@chakra-ui/react";
 import { useForm } from "react-hook-form";
-import { TPriority } from "../../../types/common";
+import { ITask, TPriority } from "../../../types/common";
 import { getErrorMessage } from "../../../utils/validate";
 import { todoService } from "../../../services";
 import { useGlobalToast } from "../../../hooks/useGlobalToast";
 import moment from "moment";
+import { useMutation } from "react-query";
 
 export interface FieldsCreate extends TPriority {
   title: string;
@@ -33,18 +34,22 @@ export const ModalCreate = (props: ModalCreateProps) => {
   const { isOpen, onClose, onSubmit = () => {} } = props;
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FieldsCreate>();
   const toast = useGlobalToast();
+  const { mutate, isLoading } = useMutation((data: ITask) => todoService.createTask(data));
 
   const handleCreate = async (task: FieldsCreate) => {
     const now = moment(new Date(), 'DD/MM/YYYY HH:mm').valueOf();
-    try {
-      await todoService.createTask({ ...task, isDone: false, createdAt: now, updatedAt: now });
-      onSubmit();
-      onClose();
-      toast('Created successfully!', 'success');
-      reset();
-    } catch (error) {
-      toast((error as Error).message, 'error');
-    }
+    mutate(
+      { ...task, isDone: false, createdAt: now, updatedAt: now },
+      {
+        onSuccess: () => {
+          onSubmit();
+          onClose();
+          toast('Created successfully!', 'success');
+          reset();
+        },
+        onError: (error) => toast((error as Error).message, 'error')
+      }
+    );
   };
 
   return <Modal isOpen={isOpen} onClose={onClose} isCentered>
@@ -74,7 +79,13 @@ export const ModalCreate = (props: ModalCreateProps) => {
         </FormControl>
       </ModalBody>
       <ModalFooter>
-        <Button colorScheme="blue" mr={3} onClick={handleSubmit(handleCreate)}>
+        <Button
+          colorScheme={"blue"}
+          marginRight={3}
+          loadingText={"Creating..."}
+          isLoading={isLoading}
+          onClick={handleSubmit(handleCreate)}
+        >
           Submit
         </Button>
       </ModalFooter>

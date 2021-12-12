@@ -2,11 +2,12 @@ import React from 'react';
 import { Box, Flex, HStack, useDisclosure } from "@chakra-ui/react";
 import { FaCheck, FaEdit, FaTrash, FaUndoAlt } from "react-icons/fa";
 import { ITask } from "../../types/common";
-import { ModalUpdate } from "./modals/ModalUpdate";
+import { ModalUpdate } from "../molecules/modals/ModalUpdate";
 import { ModalDelete } from "./modals/ModalDelete";
 import { todoService } from "../../services";
 import { useGlobalToast } from "../../hooks/useGlobalToast";
 import moment from "moment";
+import { useMutation } from "react-query";
 
 interface TaskProps {
     task: ITask;
@@ -20,41 +21,27 @@ export const Task = (props: TaskProps) => {
   const { isOpen: isOpenUpdate, onOpen: onOpenUpdate, onClose: onCloseUpdate } = useDisclosure();
   const { isOpen: isOpenDelete, onOpen: onOpenDelete, onClose: onCloseDelete } = useDisclosure();
 
+  const { mutate, isLoading } = useMutation((data: ITask) => todoService.updateTask(data));
+
   const getBorderColor = () => {
     if (priority === 'high') return 'red.500';
     if (priority === 'medium') return 'orange.500';
     if (priority === 'low') return 'green.500';
   };
 
-  const handleDelete = async () => {
-    id && await todoService.deleteTask(id);
-    toast('Deleted successfully!', 'success');
-    onCloseDelete();
-    onChange();
-  };
-
-  const handleUpdate = async (task: ITask) => {
-    const { id, ...data } = task;
-    const now = moment(new Date(), 'DD/MM/YYYY HH:mm').valueOf();
-    try {
-      id && await todoService.updateTask(id, { ...data, updatedAt: now });
-      toast('Updated successfully!', 'success');
-      onCloseUpdate();
-      onChange();
-    } catch (error) {
-      toast((error as Error).message, 'error');
-    }
-  };
-
   const handleChange = async () => {
-    id && await todoService.updateTask(id, { ...task, isDone: !isDone });
-    toast('Updated successfully!', 'success');
-    onChange();
+    id && mutate({ ...task, isDone: !isDone }, {
+      onSuccess: () => {
+        toast('Updated successfully!', 'success');
+        onChange();
+      },
+      onError: (error) => toast((error as Error).message, 'error')
+    });
   };
 
   return <><Flex
     flex={1}
-    width={'4xl'}
+    width={'full'}
     borderBottomWidth={'1px'}
     borderBottomColor={'gray.100'}
     padding={2}
@@ -90,7 +77,7 @@ export const Task = (props: TaskProps) => {
       <FaTrash color={'#E53E3E'} cursor={'pointer'} onClick={onOpenDelete} />
     </HStack>
   </Flex>
-  <ModalUpdate task={task} isOpen={isOpenUpdate} onClose={onCloseUpdate} onSubmit={handleUpdate} />
-  <ModalDelete task={task} isOpen={isOpenDelete} onClose={onCloseDelete} onSubmit={handleDelete} />
+  <ModalUpdate task={task} isOpen={isOpenUpdate} onClose={onCloseUpdate} onSubmit={onChange} />
+  <ModalDelete task={task} isOpen={isOpenDelete} onClose={onCloseDelete} onSubmit={onChange} />
   </>;
 };

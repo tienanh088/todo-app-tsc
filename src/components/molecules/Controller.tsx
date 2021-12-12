@@ -1,28 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Task } from "../atoms/Task";
-import { Box, Button, Flex, useDisclosure } from "@chakra-ui/react";
+import { Box, Button, Flex, Spinner, useDisclosure } from "@chakra-ui/react";
 import { IoFileTraySharp, IoListSharp } from "react-icons/io5";
 import { Priority } from "../atoms/Priority";
-import { ITask } from "../../types/common";
 import { todoService } from "../../services";
 import { ModalCreate } from "../atoms/modals/ModalCreate";
+import { useQuery } from "react-query";
+import { useGlobalToast } from "../../hooks/useGlobalToast";
 
 export const Controller = () => {
-  const [tasks, setTasks] = useState<ITask[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const toast = useGlobalToast();
 
-  const fetchTasks = async () => {
-    const result = await todoService.getTasks();
-    setTasks(result);
-  };
-
-  useEffect(() => {
-    fetchTasks().then();
-  }, []);
-
-  const handleChange = async () => {
-    await fetchTasks().then();
-  };
+  const { data: tasks, refetch, isLoading } = useQuery(
+    'tasks',
+    () => todoService.getTasks(),
+    {
+      onError: error => toast((error as Error).message, 'error')
+    });
 
   return <Flex
     direction={'column'}
@@ -40,32 +35,42 @@ export const Controller = () => {
         <IoListSharp />
         <Box fontWeight={'bold'} marginLeft={2}>Tasks list</Box>
       </Flex>
-      <Box>Total: {tasks.length}</Box>
+      <Box>Total: {isLoading ? 'counting...' : tasks?.length}</Box>
     </Flex>
-    {!tasks.length ? <Flex
+    <Flex
       direction={'column'}
       width={'4xl'}
       height={'xs'}
       alignItems={'center'}
       justifyContent={'center'}
-      fontWeight={'bold'}
-      fontSize={'xl'}
-      color={'gray.200'}
       padding={2}
     >
-      <IoFileTraySharp />
-      <Box>Empty</Box>
+      {isLoading ? <Spinner
+        size={'lg'}
+        thickness={"4px"}
+        color={"red.500"}
+        emptyColor={"gray.200"}
+      /> : !tasks?.length ? <Flex
+        direction={'column'}
+        fontWeight={'bold'}
+        fontSize={'xl'}
+        color={'gray.200'}
+        alignItems={'center'}
+        justifyContent={'center'}
+      >
+        <IoFileTraySharp />
+        <Box>Empty</Box>
+      </Flex>
+        :
+        <Box height={'xs'} width={'4xl'} overflow={'auto'}>
+          {tasks.map((item, index) => <Task
+            key={index}
+            task={item}
+            onChange={refetch}
+          />
+          )}
+        </Box>}
     </Flex>
-      :
-      <Box height={'xs'} overflow={'auto'}>
-        {tasks.map((item, index) => <Task
-          key={index}
-          task={item}
-          onChange={handleChange}
-        />
-        )}
-      </Box>
-    }
     <Flex
       alignItems={'center'}
       justifyContent={'space-between'}
@@ -89,6 +94,6 @@ export const Controller = () => {
         Add task
       </Button>
     </Flex>
-    <ModalCreate isOpen={isOpen} onClose={onClose} onSubmit={handleChange} />
+    <ModalCreate isOpen={isOpen} onClose={onClose} onSubmit={refetch} />
   </Flex>;
 };

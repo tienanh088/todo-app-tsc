@@ -15,24 +15,42 @@ import {
 import { useForm } from "react-hook-form";
 import { ITask } from "../../../types/common";
 import { getErrorMessage } from "../../../utils/validate";
+import { useMutation } from "react-query";
+import { todoService } from "../../../services";
+import moment from "moment";
+import { useGlobalToast } from "../../../hooks/useGlobalToast";
+import { ControlledStatus } from "../../atoms/ControlledStatus";
 
 interface ModalUpdateProps {
   task?: ITask;
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (task: ITask) => void;
+  onSubmit: () => void;
 }
 
 export const ModalUpdate = (props: ModalUpdateProps) => {
   const { task, isOpen, onClose, onSubmit = () => {} } = props;
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<ITask>();
+  const { control, register, handleSubmit, formState: { errors }, reset } = useForm<ITask>();
+  const toast = useGlobalToast();
+  const { mutate, isLoading } = useMutation((data: ITask) => todoService.updateTask(data));
 
   useEffect(() => {
     reset(task);
   }, [task]);
 
-  const handleUpdate = (task: ITask) => {
-    onSubmit(task);
+  const handleUpdate = async (task: ITask) => {
+    const now = moment(new Date(), 'DD/MM/YYYY HH:mm').valueOf();
+    mutate(
+      { ...task, updatedAt: now },
+      {
+        onSuccess: () => {
+          toast('Updated successfully!', 'success');
+          onClose();
+          onSubmit();
+        },
+        onError: error => toast((error as Error).message, 'error')
+      }
+    );
   };
 
   return <Modal isOpen={isOpen} onClose={onClose} isCentered>
@@ -60,9 +78,15 @@ export const ModalUpdate = (props: ModalUpdateProps) => {
           </Select>
           <Box color={'red'}>{errors.priority && 'Please select priority'}</Box>
         </FormControl>
+        <ControlledStatus control={control} />
       </ModalBody>
       <ModalFooter>
-        <Button colorScheme="blue" mr={3} onClick={handleSubmit(handleUpdate)}>
+        <Button
+          colorScheme={"blue"}
+          marginRight={3}
+          loadingText={"Updating..."}
+          isLoading={isLoading}
+          onClick={handleSubmit(handleUpdate)}>
           Submit
         </Button>
       </ModalFooter>

@@ -11,6 +11,9 @@ import {
   ModalOverlay
 } from "@chakra-ui/react";
 import { ITask } from "../../../types/common";
+import { useMutation } from "react-query";
+import { todoService } from "../../../services";
+import { useGlobalToast } from "../../../hooks/useGlobalToast";
 
 interface ModalDeleteProps {
   task?: ITask;
@@ -21,6 +24,19 @@ interface ModalDeleteProps {
 
 export const ModalDelete = (props: ModalDeleteProps) => {
   const { task, isOpen, onClose, onSubmit = () => {} } = props;
+  const toast = useGlobalToast();
+  const { mutate, isLoading } = useMutation((id: number) => todoService.deleteTask(id));
+
+  const handleDelete = async () => {
+    task?.id && mutate(task?.id, {
+      onSuccess: () => {
+        toast('Deleted successfully!', 'success');
+        onClose();
+        onSubmit();
+      },
+      onError: (error) => toast((error as Error).message, 'error')
+    });
+  };
 
   return <Modal isOpen={isOpen} onClose={onClose} isCentered>
     <ModalOverlay />
@@ -33,7 +49,13 @@ export const ModalDelete = (props: ModalDeleteProps) => {
         <Box>Are you sure you want to delete this task?</Box>
       </ModalBody>
       <ModalFooter>
-        <Button colorScheme="blue" mr={3} onClick={onSubmit}>
+        <Button
+          colorScheme={"blue"}
+          marginRight={3}
+          loadingText={"Deleting..."}
+          isLoading={isLoading}
+          onClick={handleDelete}
+        >
           OK
         </Button>
         <Button colorScheme="red" onClick={onClose}>
