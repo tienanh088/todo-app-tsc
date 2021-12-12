@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Button,
@@ -13,45 +13,33 @@ import {
   ModalOverlay, Select
 } from "@chakra-ui/react";
 import { useForm } from "react-hook-form";
-import { TPriority } from "../../../types/common";
+import { ITask } from "../../../types/common";
 import { getErrorMessage } from "../../../utils/validate";
-import { todoService } from "../../../services";
-import { useGlobalToast } from "../../../hooks/useGlobalToast";
-import moment from "moment";
 
-export interface FieldsCreate extends TPriority {
-  title: string;
-}
-
-interface ModalCreateProps {
+interface ModalUpdateProps {
+  task?: ITask;
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (task: ITask) => void;
 }
 
-export const ModalCreate = (props: ModalCreateProps) => {
-  const { isOpen, onClose, onSubmit = () => {} } = props;
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<FieldsCreate>();
-  const toast = useGlobalToast();
+export const ModalUpdate = (props: ModalUpdateProps) => {
+  const { task, isOpen, onClose, onSubmit = () => {} } = props;
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<ITask>();
 
-  const handleCreate = async (task: FieldsCreate) => {
-    const now = moment(new Date(), 'DD/MM/YYYY HH:mm').valueOf();
-    try {
-      await todoService.createTask({ ...task, isDone: false, createdAt: now, updatedAt: now });
-      onSubmit();
-      onClose();
-      toast('Created successfully!', 'success');
-      reset();
-    } catch (error) {
-      toast((error as Error).message, 'error');
-    }
+  useEffect(() => {
+    reset(task);
+  }, [task]);
+
+  const handleUpdate = (task: ITask) => {
+    onSubmit(task);
   };
 
   return <Modal isOpen={isOpen} onClose={onClose} isCentered>
     <ModalOverlay />
     <ModalContent>
       <ModalHeader>
-        Create new task
+        Update task
       </ModalHeader>
       <ModalCloseButton />
       <ModalBody>
@@ -74,7 +62,7 @@ export const ModalCreate = (props: ModalCreateProps) => {
         </FormControl>
       </ModalBody>
       <ModalFooter>
-        <Button colorScheme="blue" mr={3} onClick={handleSubmit(handleCreate)}>
+        <Button colorScheme="blue" mr={3} onClick={handleSubmit(handleUpdate)}>
           Submit
         </Button>
       </ModalFooter>

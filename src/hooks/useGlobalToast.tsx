@@ -6,7 +6,6 @@ export const useGlobalToast = () => {
 
   return (message: string, status: AlertStatus) => {
     toast({
-      // title: 'Account created.',
       description: message,
       status: status,
       duration: 3000,
