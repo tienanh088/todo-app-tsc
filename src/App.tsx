@@ -1,5 +1,4 @@
 import React from 'react';
-import './App.css';
 import { Controller } from "./components/molecules/Controller";
 import { Flex } from "@chakra-ui/react";
 
