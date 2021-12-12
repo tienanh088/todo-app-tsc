@@ -1,56 +1,27 @@
-import React, { useState } from 'react';
-import { TodoRecord } from "../atoms/TodoRecord";
+import React, { useEffect, useState } from 'react';
+import { Task } from "../atoms/Task";
 import { Box, Button, Flex, useDisclosure } from "@chakra-ui/react";
 import { IoFileTraySharp, IoListSharp } from "react-icons/io5";
-import { FieldsCreate, ModalCreate } from "../atoms/modals/ModalCreate";
 import { Priority } from "../atoms/Priority";
-import { useGlobalToast } from "../../hooks/useGlobalToast";
-import { ModalDelete } from "../atoms/modals/ModalDelete";
-import { TPriority } from "../../types/common";
-
-export interface RecordType extends TPriority {
-  title: string;
-  isDone: boolean;
-}
+import { ITask } from "../../types/common";
+import { todoService } from "../../services";
+import { ModalCreate } from "../atoms/modals/ModalCreate";
 
 export const Controller = () => {
-  const [records, setRecords] = useState<RecordType[]>([]);
+  const [tasks, setTasks] = useState<ITask[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [deleteItem, setDeleteItem] = useState<RecordType>();
-  const { isOpen: isOpenDelete, onOpen: onOpenDelete, onClose: onCloseDelete } = useDisclosure();
-  const toast = useGlobalToast();
 
-  const handleSubmit = (value: FieldsCreate) => {
-    const indexRecord = records.findIndex(item => item.title === value.title);
-
-    if (indexRecord !== -1) {
-      const updateRecord = [...records];
-      updateRecord[indexRecord] = { ...value, isDone: false };
-      setRecords(updateRecord);
-      onClose();
-      toast('Updated successfully!', 'success');
-
-      return;
-    }
-
-    const newRecord = [{ ...value, isDone: false }, ...records];
-    setRecords(newRecord);
-    onClose();
-    toast('Created successfully!', 'success');
+  const fetchTasks = async () => {
+    const result = await todoService.getTasks();
+    setTasks(result);
   };
 
-  const handleChange = (index: number) => {
-    const currentRecord = [...records];
-    currentRecord[index] = { ...currentRecord[index], isDone: !currentRecord[index].isDone };
-    setRecords(currentRecord);
-    toast('Updated successfully!', 'success');
-  };
+  useEffect(() => {
+    fetchTasks().then();
+  }, []);
 
-  const handleDelete = () => {
-    const currentRecord = records.filter(item => item.title !== deleteItem?.title);
-    setRecords(currentRecord);
-    onCloseDelete();
-    toast('Deleted successfully!', 'success');
+  const handleChange = async () => {
+    await fetchTasks().then();
   };
 
   return <Flex
@@ -69,9 +40,9 @@ export const Controller = () => {
         <IoListSharp />
         <Box fontWeight={'bold'} marginLeft={2}>Tasks list</Box>
       </Flex>
-      <Box>Total: {records.length}</Box>
+      <Box>Total: {tasks.length}</Box>
     </Flex>
-    {!records.length ? <Flex
+    {!tasks.length ? <Flex
       direction={'column'}
       width={'4xl'}
       height={'xs'}
@@ -87,16 +58,10 @@ export const Controller = () => {
     </Flex>
       :
       <Box height={'xs'} overflow={'auto'}>
-        {records.map((item, index) => <TodoRecord
+        {tasks.map((item, index) => <Task
           key={index}
-          title={item.title}
-          priority={item.priority}
-          isDone={item.isDone}
-          onChange={() => handleChange(index)}
-          onDelete={() => {
-            setDeleteItem(item);
-            onOpenDelete();
-          }}
+          task={item}
+          onChange={handleChange}
         />
         )}
       </Box>
@@ -124,7 +89,6 @@ export const Controller = () => {
         Add task
       </Button>
     </Flex>
-    <ModalCreate isOpen={isOpen} onClose={onClose} onSubmit={handleSubmit} />
-    <ModalDelete item={deleteItem} isOpen={isOpenDelete} onClose={onCloseDelete} onSubmit={handleDelete} />
+    <ModalCreate isOpen={isOpen} onClose={onClose} onSubmit={handleChange} />
   </Flex>;
 };

@@ -10,23 +10,23 @@ import {
   ModalHeader,
   ModalOverlay
 } from "@chakra-ui/react";
-import { RecordType } from "../../molecules/Controller";
+import { ITask } from "../../../types/common";
 
 interface ModalDeleteProps {
-  item?: RecordType;
+  task?: ITask;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: () => void;
 }
 
 export const ModalDelete = (props: ModalDeleteProps) => {
-  const { item, isOpen, onClose, onSubmit = () => {} } = props;
+  const { task, isOpen, onClose, onSubmit = () => {} } = props;
 
   return <Modal isOpen={isOpen} onClose={onClose} isCentered>
     <ModalOverlay />
     <ModalContent>
       <ModalHeader>
-        Delete {item?.title}
+        Delete {task?.title}
       </ModalHeader>
       <ModalCloseButton />
       <ModalBody>
