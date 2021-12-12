@@ -13,7 +13,7 @@
         "ecmaFeatures": {
             "jsx": true
         },
-        "ecmaVersion": 13,
+        "ecmaVersion": 12,
         "sourceType": "module"
     },
     "plugins": [
@@ -51,5 +51,10 @@
         "no-var": "error",
         "no-empty-function": ["error", {"allow": ["arrowFunctions"]}],
         "@typescript-eslint/no-empty-function": ["error", {"allow": ["arrowFunctions"]}]
+    },
+    "settings": {
+        "react": {
+            "version": "detect"
+        }
     }
 }
