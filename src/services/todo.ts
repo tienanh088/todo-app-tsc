@@ -20,18 +20,18 @@ export default class TodoService {
   }
 
   async createTask(data: ITask): Promise<ITask> {
-    const { id, title } = data;
-    const isExist = await this.checkExistTask(title, id);
+    const { title } = data;
+    const isExist = await this.checkExistTask(title);
     if (isExist) throw new Error('Task already exist!');
     const response = await this.axios.post('', data);
     return response.data;
   }
 
-  async updateTask(id: number, data: ITask): Promise<ITask> {
-    const { title } = data;
-    const isExist = await this.checkExistTask(title, id);
+  async updateTask(data: ITask): Promise<ITask> {
+    const { id, ...task } = data;
+    const isExist = await this.checkExistTask(task.title, id);
     if (isExist) throw new Error('Task already exist!');
-    const response = await this.axios.put(`/${id}`, data);
+    const response = await this.axios.put(`/${id}`, task);
     return response.data;
   }
 
